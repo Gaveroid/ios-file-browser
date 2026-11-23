@@ -1,0 +1,27 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync --group build
+      - run: uv run pytest -q
+      - run: >-
+          uv run pyinstaller --onefile --name iosfb
+          --collect-all pymobiledevice3
+          --collect-submodules wsgidav --collect-data wsgidav
+          --collect-submodules cheroot
+          packaging/iosfb_main.py
+      - run: dist\iosfb.exe --version
+      - run: gh release create $env:GITHUB_REF_NAME dist/iosfb.exe --generate-notes
+        env:
+          GH_TOKEN: ${{ github.token }}
